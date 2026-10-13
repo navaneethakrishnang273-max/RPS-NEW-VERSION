@@ -98,7 +98,8 @@ python src/server.py
 ```
 
 Then open **[http://localhost:5000](http://localhost:5000)** in your web browser. Features include:
-- Interactive Rock/Paper/Scissors buttons with keyboard hotkeys (`R`, `P`, `S`).
+- **🎙️ Voice Commands & Blind Accessibility**: Hands-free voice recognition (`"Rock"`, `"Paper"`, `"Scissors"`, `"Score"`, `"Reset"`, `"Help"`), spoken commentary (TTS), acoustic chimes, and ARIA screen reader support.
+- Interactive Rock/Paper/Scissors buttons with keyboard hotkeys (`R`, `P`, `S`, `V`, `C`, `X`, `M`).
 - Real-time Scoreboard with live win-rate counters.
 - AI internal prediction & counter-move breakdown.
 - Live Markov Chain transition matrix visualizer.

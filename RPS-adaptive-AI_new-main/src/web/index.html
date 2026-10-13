@@ -3,15 +3,15 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>RPS Opponent Modeling — Markov Agent</title>
+  <title>RPS Opponent Modeling — Markov Agent with Voice & Accessibility</title>
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;500;600;700;800&family=JetBrains+Mono:wght@400;600&display=swap" rel="stylesheet">
   <style>
     :root {
       --bg-primary: #0a0d14;
-      --bg-card: rgba(18, 24, 38, 0.75);
-      --bg-card-border: rgba(255, 255, 255, 0.08);
+      --bg-card: rgba(18, 24, 38, 0.85);
+      --bg-card-border: rgba(255, 255, 255, 0.1);
       --accent-blue: #38bdf8;
       --accent-purple: #a855f7;
       --accent-green: #22c55e;
@@ -27,6 +27,18 @@
       padding: 0;
     }
 
+    .sr-only {
+      position: absolute;
+      width: 1px;
+      height: 1px;
+      padding: 0;
+      margin: -1px;
+      overflow: hidden;
+      clip: rect(0, 0, 0, 0);
+      white-space: nowrap;
+      border-width: 0;
+    }
+
     body {
       font-family: 'Outfit', -apple-system, BlinkMacSystemFont, sans-serif;
       background: radial-gradient(circle at 50% 0%, #172033 0%, #0a0d14 70%);
@@ -40,7 +52,7 @@
 
     header {
       text-align: center;
-      margin-bottom: 28px;
+      margin-bottom: 24px;
     }
 
     .badge {
@@ -49,12 +61,19 @@
       font-weight: 600;
       letter-spacing: 0.05em;
       text-transform: uppercase;
-      padding: 4px 12px;
+      padding: 4px 14px;
       border-radius: 9999px;
       background: rgba(56, 189, 248, 0.15);
       color: var(--accent-blue);
       border: 1px solid rgba(56, 189, 248, 0.3);
       margin-bottom: 8px;
+    }
+
+    .badge-accessible {
+      background: rgba(34, 197, 94, 0.15);
+      color: var(--accent-green);
+      border-color: rgba(34, 197, 94, 0.3);
+      margin-left: 6px;
     }
 
     h1 {
@@ -69,19 +88,20 @@
     p.subtitle {
       color: var(--text-muted);
       font-size: 0.95rem;
-      max-width: 600px;
+      max-width: 660px;
       margin: 0 auto;
+      line-height: 1.5;
     }
 
     .container {
       width: 100%;
-      max-width: 1100px;
+      max-width: 1140px;
       display: grid;
-      grid-template-columns: 1.2fr 1fr;
+      grid-template-columns: 1.25fr 1fr;
       gap: 24px;
     }
 
-    @media (max-width: 900px) {
+    @media (max-width: 940px) {
       .container {
         grid-template-columns: 1fr;
       }
@@ -105,6 +125,248 @@
       align-items: center;
       justify-content: space-between;
       margin-bottom: 18px;
+    }
+
+    /* Voice Assistant Control Panel */
+    .voice-assistant-panel {
+      background: linear-gradient(135deg, rgba(30, 41, 59, 0.85), rgba(15, 23, 42, 0.95));
+      border: 1px solid rgba(56, 189, 248, 0.35);
+      border-radius: 16px;
+      padding: 18px;
+      margin-bottom: 20px;
+      box-shadow: 0 6px 24px rgba(0, 0, 0, 0.3);
+    }
+
+    .voice-header {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      flex-wrap: wrap;
+      gap: 12px;
+      margin-bottom: 14px;
+    }
+
+    .voice-status-wrapper {
+      display: flex;
+      align-items: center;
+      gap: 14px;
+    }
+
+    .mic-indicator {
+      width: 48px;
+      height: 48px;
+      border-radius: 50%;
+      background: rgba(255, 255, 255, 0.06);
+      border: 2px solid rgba(255, 255, 255, 0.18);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 1.4rem;
+      cursor: pointer;
+      transition: all 0.25s ease;
+      position: relative;
+    }
+
+    .mic-indicator.listening {
+      background: rgba(239, 68, 68, 0.25);
+      border-color: var(--accent-red);
+      color: var(--accent-red);
+      animation: pulse-ring 1.5s infinite;
+    }
+
+    .mic-indicator.speaking {
+      background: rgba(34, 197, 94, 0.25);
+      border-color: var(--accent-green);
+      color: var(--accent-green);
+      animation: pulse-ring 1.2s infinite;
+    }
+
+    @keyframes pulse-ring {
+      0% {
+        box-shadow: 0 0 0 0 rgba(239, 68, 68, 0.5);
+      }
+      70% {
+        box-shadow: 0 0 0 14px rgba(239, 68, 68, 0);
+      }
+      100% {
+        box-shadow: 0 0 0 0 rgba(239, 68, 68, 0);
+      }
+    }
+
+    .voice-status-text {
+      font-size: 1rem;
+      font-weight: 700;
+      letter-spacing: 0.02em;
+    }
+
+    .voice-status-sub {
+      font-size: 0.8rem;
+      color: var(--text-muted);
+      margin-top: 2px;
+    }
+
+    .voice-actions {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      flex-wrap: wrap;
+    }
+
+    .btn-voice-toggle {
+      background: linear-gradient(135deg, #0284c7, #0369a1);
+      border: 1px solid rgba(56, 189, 248, 0.4);
+      color: #ffffff;
+      padding: 10px 18px;
+      border-radius: 10px;
+      font-size: 0.9rem;
+      font-weight: 700;
+      cursor: pointer;
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      transition: all 0.2s ease;
+    }
+
+    .btn-voice-toggle:hover {
+      background: linear-gradient(135deg, #0ea5e9, #0284c7);
+      transform: translateY(-1px);
+      box-shadow: 0 4px 14px rgba(56, 189, 248, 0.35);
+    }
+
+    .btn-voice-toggle.active {
+      background: linear-gradient(135deg, #dc2626, #b91c1c);
+      border-color: rgba(239, 68, 68, 0.5);
+    }
+
+    .btn-icon-setting {
+      background: rgba(255, 255, 255, 0.06);
+      border: 1px solid rgba(255, 255, 255, 0.12);
+      color: var(--text-main);
+      width: 38px;
+      height: 38px;
+      border-radius: 8px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      cursor: pointer;
+      font-size: 1.05rem;
+      transition: all 0.2s;
+    }
+
+    .btn-icon-setting:hover {
+      background: rgba(255, 255, 255, 0.14);
+    }
+
+    .btn-icon-setting.muted {
+      color: var(--accent-red);
+      opacity: 0.6;
+    }
+
+    /* Live Mic Level Bar */
+    .mic-level-row {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      margin-bottom: 10px;
+      font-size: 0.78rem;
+      color: var(--text-muted);
+    }
+
+    .mic-level-track {
+      flex: 1;
+      height: 6px;
+      background: rgba(255, 255, 255, 0.08);
+      border-radius: 999px;
+      overflow: hidden;
+    }
+
+    .mic-level-fill {
+      height: 100%;
+      width: 0%;
+      background: linear-gradient(90deg, #22c55e, #38bdf8, #ef4444);
+      border-radius: 999px;
+      transition: width 0.06s linear;
+    }
+
+    .voice-transcript-box {
+      background: rgba(0, 0, 0, 0.4);
+      border: 1px dashed rgba(255, 255, 255, 0.18);
+      border-radius: 10px;
+      padding: 10px 14px;
+      font-size: 0.88rem;
+      font-family: 'JetBrains Mono', monospace;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 10px;
+    }
+
+    .voice-transcript-text {
+      color: var(--accent-blue);
+      overflow: hidden;
+      text-overflow: ellipsis;
+      white-space: nowrap;
+      font-weight: 600;
+    }
+
+    .voice-chips-row {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 6px;
+      margin-top: 10px;
+      align-items: center;
+    }
+
+    .voice-chip {
+      font-size: 0.72rem;
+      padding: 4px 9px;
+      border-radius: 6px;
+      background: rgba(255, 255, 255, 0.05);
+      border: 1px solid rgba(255, 255, 255, 0.08);
+      color: var(--text-muted);
+    }
+
+    .voice-chip strong {
+      color: var(--text-main);
+    }
+
+    /* Soundwave bars animation */
+    .soundwave {
+      display: inline-flex;
+      align-items: center;
+      gap: 3px;
+      height: 16px;
+    }
+
+    .soundwave-bar {
+      width: 3px;
+      height: 100%;
+      background-color: var(--accent-blue);
+      border-radius: 2px;
+      animation: soundwave-anim 1s ease-in-out infinite;
+    }
+
+    .soundwave-bar:nth-child(1) { animation-delay: 0.0s; height: 30%; }
+    .soundwave-bar:nth-child(2) { animation-delay: 0.2s; height: 80%; }
+    .soundwave-bar:nth-child(3) { animation-delay: 0.4s; height: 100%; }
+    .soundwave-bar:nth-child(4) { animation-delay: 0.1s; height: 60%; }
+    .soundwave-bar:nth-child(5) { animation-delay: 0.3s; height: 40%; }
+
+    @keyframes soundwave-anim {
+      0%, 100% { transform: scaleY(0.3); }
+      50% { transform: scaleY(1); }
+    }
+
+    /* Diagnostic alert banner */
+    .diag-banner {
+      background: rgba(245, 158, 11, 0.15);
+      border: 1px solid rgba(245, 158, 11, 0.3);
+      border-radius: 10px;
+      padding: 8px 12px;
+      margin-top: 10px;
+      font-size: 0.8rem;
+      color: #fde68a;
+      display: none;
     }
 
     /* Scoreboard */
@@ -196,12 +458,12 @@
       font-size: 1rem;
       font-weight: 800;
       letter-spacing: 0.05em;
-      padding: 8px 16px;
-      border-radius: 10px;
+      padding: 10px 16px;
+      border-radius: 12px;
       margin-bottom: 20px;
       background: rgba(255, 255, 255, 0.04);
       border: 1px solid rgba(255, 255, 255, 0.08);
-      min-height: 42px;
+      min-height: 48px;
       display: flex;
       align-items: center;
       justify-content: center;
@@ -234,11 +496,12 @@
       transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
     }
 
-    .btn-move:hover {
+    .btn-move:hover, .btn-move:focus-visible {
       background: rgba(56, 189, 248, 0.12);
       border-color: var(--accent-blue);
       transform: translateY(-3px);
       box-shadow: 0 8px 20px rgba(56, 189, 248, 0.25);
+      outline: none;
     }
 
     .btn-move:active {
@@ -281,18 +544,98 @@
       transition: all 0.2s;
     }
 
-    .btn-secondary:hover {
+    .btn-secondary:hover, .btn-secondary:focus-visible {
       background: rgba(255, 255, 255, 0.08);
       color: var(--text-main);
+      outline: none;
+    }
+
+    /* History Toolbar & Navigation */
+    .history-toolbar {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      margin-bottom: 12px;
+      padding-bottom: 10px;
+      border-bottom: 1px solid rgba(255, 255, 255, 0.08);
+      flex-wrap: wrap;
+      gap: 8px;
+    }
+
+    .history-info-badge {
+      font-size: 0.8rem;
+      font-weight: 600;
+      color: var(--text-muted);
+      font-family: 'JetBrains Mono', monospace;
+    }
+
+    .history-nav-actions {
+      display: flex;
+      align-items: center;
+      gap: 6px;
+    }
+
+    .btn-history-action {
+      background: rgba(255, 255, 255, 0.05);
+      border: 1px solid rgba(255, 255, 255, 0.12);
+      color: var(--text-main);
+      font-family: inherit;
+      font-size: 0.76rem;
+      font-weight: 600;
+      padding: 5px 11px;
+      border-radius: 8px;
+      cursor: pointer;
+      display: inline-flex;
+      align-items: center;
+      gap: 5px;
+      transition: all 0.2s;
+    }
+
+    .btn-history-action:hover {
+      background: rgba(56, 189, 248, 0.15);
+      border-color: var(--accent-blue);
+      color: var(--accent-blue);
     }
 
     /* History & Markov Inspector */
     .history-list {
-      max-height: 180px;
-      overflow-y: auto;
+      height: 460px;
+      max-height: 460px;
+      overflow-y: scroll; /* ALWAYS visible scrollbar */
+      scrollbar-gutter: stable;
       display: flex;
       flex-direction: column;
-      gap: 6px;
+      gap: 7px;
+      padding-right: 6px;
+      scroll-behavior: smooth;
+    }
+
+    /* Firefox scrollbar */
+    .history-list {
+      scrollbar-width: thin;
+      scrollbar-color: #38bdf8 rgba(255, 255, 255, 0.06);
+    }
+
+    /* Webkit (Chrome, Edge, Safari) visible glowing scrollbar */
+    .history-list::-webkit-scrollbar {
+      width: 8px;
+    }
+
+    .history-list::-webkit-scrollbar-track {
+      background: rgba(255, 255, 255, 0.04);
+      border-radius: 6px;
+      border: 1px solid rgba(255, 255, 255, 0.06);
+    }
+
+    .history-list::-webkit-scrollbar-thumb {
+      background: linear-gradient(180deg, #0284c7, #38bdf8);
+      border-radius: 6px;
+      box-shadow: 0 0 6px rgba(56, 189, 248, 0.4);
+    }
+
+    .history-list::-webkit-scrollbar-thumb:hover {
+      background: linear-gradient(180deg, #38bdf8, #7dd3fc);
+      box-shadow: 0 0 10px rgba(56, 189, 248, 0.7);
     }
 
     .history-row {
@@ -359,32 +702,102 @@
       transition: all 0.2s;
     }
 
-    .tab-btn.active {
+    .tab-btn.active, .tab-btn:focus-visible {
       background: rgba(56, 189, 248, 0.15);
       color: var(--accent-blue);
+      outline: none;
     }
   </style>
 </head>
 <body>
 
+  <!-- Screen Reader Live Announcement Region -->
+  <div id="sr-announcements" class="sr-only" aria-live="assertive" aria-atomic="true"></div>
+
   <header>
-    <div class="badge">Adaptive Opponent Modeling</div>
+    <div>
+      <span class="badge">Adaptive Opponent Modeling</span>
+      <span class="badge badge-accessible">🎙️ Blind & Voice Accessible</span>
+    </div>
     <h1>Rock-Paper-Scissors AI Arena</h1>
-    <p class="subtitle">An Order-2 Markov Chain Agent with hierarchical backoff that learns and counters your move patterns in real time.</p>
+    <p class="subtitle">An Order-2 Markov Chain Agent with hierarchical backoff that learns your move patterns. Fully accessible with hands-free voice commands, live audio monitoring, and spoken commentary.</p>
   </header>
 
   <div class="container">
     <!-- Left Column: Arena & Play Controls -->
-    <div class="card">
+    <div class="card" role="region" aria-label="Game Arena and Controls">
+      
+      <!-- Voice Assistant Control Center -->
+      <div class="voice-assistant-panel" id="voice-panel">
+        <div class="voice-header">
+          <div class="voice-status-wrapper">
+            <button class="mic-indicator" id="mic-status-btn" onclick="toggleVoiceMode()" aria-label="Toggle Voice Control. Keyboard shortcut: V">
+              🎙️
+            </button>
+            <div>
+              <div class="voice-status-text" id="voice-status-heading">Voice Command: Ready</div>
+              <div class="voice-status-sub" id="voice-status-sub">Press V or click "Start Voice Mode" to play hands-free</div>
+            </div>
+          </div>
+
+          <div class="voice-actions">
+            <button class="btn-voice-toggle" id="btn-voice-main" onclick="toggleVoiceMode()" aria-label="Enable Voice Mode (Shortcut V)">
+              <span id="voice-btn-icon">🎙️</span>
+              <span id="voice-btn-label">Start Voice Mode</span>
+            </button>
+            <button class="btn-icon-setting" id="btn-test-mic" onclick="testMicrophone()" title="Test Microphone & Audio" aria-label="Test Microphone and Audio">
+              🎤
+            </button>
+            <button class="btn-icon-setting" id="btn-tts-toggle" onclick="toggleSpeechAudio()" title="Toggle Spoken Commentary (M)" aria-label="Toggle Voice Speech Commentary">
+              🔊
+            </button>
+            <button class="btn-icon-setting" id="btn-sound-toggle" onclick="toggleSoundEffects()" title="Toggle Audio Chimes" aria-label="Toggle Audio Sound Cues">
+              🔔
+            </button>
+          </div>
+        </div>
+
+        <!-- Live Mic Volume Bar -->
+        <div class="mic-level-row" id="mic-level-row">
+          <span>Mic Audio:</span>
+          <div class="mic-level-track">
+            <div class="mic-level-fill" id="mic-level-fill"></div>
+          </div>
+          <span id="mic-level-text" style="font-family:'JetBrains Mono',monospace; min-width:40px;">0%</span>
+        </div>
+
+        <div class="voice-transcript-box">
+          <span style="color: var(--text-muted); font-size: 0.78rem;">HEARD:</span>
+          <span class="voice-transcript-text" id="voice-transcript">Say "Rock", "Paper", or "Scissors" to play</span>
+          <div id="voice-active-wave" style="display: none;" class="soundwave">
+            <div class="soundwave-bar"></div>
+            <div class="soundwave-bar"></div>
+            <div class="soundwave-bar"></div>
+            <div class="soundwave-bar"></div>
+            <div class="soundwave-bar"></div>
+          </div>
+        </div>
+
+        <!-- Diagnostic notice for browser permissions or network errors -->
+        <div class="diag-banner" id="diag-banner"></div>
+
+        <div class="voice-chips-row">
+          <span class="voice-chip"><strong>Moves:</strong> "Rock", "Paper", "Scissors"</span>
+          <span class="voice-chip"><strong>Commands:</strong> "Score", "Reset", "Repeat", "Help"</span>
+          <span class="voice-chip"><strong>Keys:</strong> [V] Voice &bull; [R/P/S] Play &bull; [C] Score</span>
+        </div>
+      </div>
+
       <div class="card-title">
         <span>Game Arena</span>
         <div class="controls-bar">
-          <button class="btn-secondary" onclick="resetGame()">Reset Match</button>
+          <button class="btn-secondary" onclick="announceScore(true)" aria-label="Announce match score aloud">Speak Score (C)</button>
+          <button class="btn-secondary" onclick="resetGame()" aria-label="Reset Match Score and Model">Reset Match (X)</button>
         </div>
       </div>
 
       <!-- Scoreboard -->
-      <div class="scoreboard">
+      <div class="scoreboard" role="status" aria-label="Current match scores">
         <div class="score-item">
           <div class="score-label">Rounds</div>
           <div class="score-val" id="score-rounds">0</div>
@@ -404,38 +817,38 @@
       </div>
 
       <!-- Arena Display -->
-      <div class="arena-display">
+      <div class="arena-display" aria-live="polite">
         <div class="player-slot">
           <div class="player-slot-name">YOU</div>
-          <div class="move-icon-circle" id="player-move-icon">❔</div>
+          <div class="move-icon-circle" id="player-move-icon" aria-hidden="true">❔</div>
           <div class="move-label" id="player-move-label">Choose move</div>
         </div>
         <div class="vs-divider">VS</div>
         <div class="player-slot">
           <div class="player-slot-name">MARKOV AGENT</div>
-          <div class="move-icon-circle" id="ai-move-icon">🤖</div>
+          <div class="move-icon-circle" id="ai-move-icon" aria-hidden="true">🤖</div>
           <div class="move-label" id="ai-move-label">Waiting...</div>
         </div>
       </div>
 
-      <div class="outcome-pill" id="outcome-pill">Choose your move to begin match</div>
+      <div class="outcome-pill" id="outcome-pill" role="status">Choose your move or say "Rock", "Paper", "Scissors"</div>
 
       <!-- Move Buttons -->
       <div class="actions-grid">
-        <button class="btn-move" onclick="playMove('R')">
-          <span class="emoji">🪨</span>
+        <button class="btn-move" onclick="playMove('R')" aria-label="Play Rock. Shortcut: Press R">
+          <span class="emoji" aria-hidden="true">🪨</span>
           <span class="name">Rock</span>
-          <span class="key-hint">Press R</span>
+          <span class="key-hint">Press R or Say "Rock"</span>
         </button>
-        <button class="btn-move" onclick="playMove('P')">
-          <span class="emoji">📄</span>
+        <button class="btn-move" onclick="playMove('P')" aria-label="Play Paper. Shortcut: Press P">
+          <span class="emoji" aria-hidden="true">📄</span>
           <span class="name">Paper</span>
-          <span class="key-hint">Press P</span>
+          <span class="key-hint">Press P or Say "Paper"</span>
         </button>
-        <button class="btn-move" onclick="playMove('S')">
-          <span class="emoji">✂️</span>
+        <button class="btn-move" onclick="playMove('S')" aria-label="Play Scissors. Shortcut: Press S">
+          <span class="emoji" aria-hidden="true">✂️</span>
           <span class="name">Scissors</span>
-          <span class="key-hint">Press S</span>
+          <span class="key-hint">Press S or Say "Scissors"</span>
         </button>
       </div>
 
@@ -449,7 +862,7 @@
     </div>
 
     <!-- Right Column: Model State & Benchmarks -->
-    <div class="card">
+    <div class="card" role="region" aria-label="Model State and History">
       <div class="tabs">
         <button class="tab-btn active" onclick="switchTab('history')">Live Match History</button>
         <button class="tab-btn" onclick="switchTab('markov')">Markov Transitions</button>
@@ -458,8 +871,26 @@
 
       <!-- Tab 1: Live History -->
       <div id="tab-history">
+        <div class="history-toolbar">
+          <div class="history-info-badge" id="history-round-count">0 Rounds Recorded</div>
+          <div class="history-nav-actions">
+            <button class="btn-history-action" onclick="toggleHistoryOrder()" id="btn-history-order" title="Toggle sorting order">
+              <span>🔄</span>
+              <span id="history-order-label">From Beginning (Round 1)</span>
+            </button>
+            <button class="btn-history-action" onclick="scrollToBeginning()" title="Scroll up to Round 1">
+              <span>⬆️</span>
+              <span>Start (Round 1)</span>
+            </button>
+            <button class="btn-history-action" onclick="scrollToLatest()" title="Scroll down to the latest move">
+              <span>⬇️</span>
+              <span>Latest</span>
+            </button>
+          </div>
+        </div>
+
         <div class="history-list" id="history-list">
-          <div style="text-align: center; color: var(--text-muted); padding: 20px;">No rounds played yet. Make your first move!</div>
+          <div style="text-align: center; color: var(--text-muted); padding: 30px;">No rounds played yet. Make your first move!</div>
         </div>
       </div>
 
@@ -485,6 +916,545 @@
     const EMOJIS = { "R": "🪨", "P": "📄", "S": "✂️" };
     const NAMES = { "R": "Rock", "P": "Paper", "S": "Scissors" };
 
+    // Voice & Audio State
+    let voiceActive = false;
+    let ttsEnabled = true;
+    let soundEffectsEnabled = true;
+    let isSpeaking = false;
+    let recognition = null;
+    let micStream = null;
+    let micAnalyser = null;
+    let micAnimFrame = null;
+    let currentGameState = null;
+    let lastOutcomeText = "";
+    let lastProcessedMoveTimestamp = 0;
+
+    // Web Audio API Context
+    let audioCtx = null;
+    function getAudioContext() {
+      if (!audioCtx) {
+        const AudioContextClass = window.AudioContext || window.webkitAudioContext;
+        if (AudioContextClass) {
+          audioCtx = new AudioContextClass();
+        }
+      }
+      if (audioCtx && audioCtx.state === 'suspended') {
+        audioCtx.resume();
+      }
+      return audioCtx;
+    }
+
+    function showDiag(msg, isError = true) {
+      const banner = document.getElementById('diag-banner');
+      if (banner) {
+        banner.style.display = 'block';
+        banner.style.background = isError ? 'rgba(239, 68, 68, 0.2)' : 'rgba(34, 197, 94, 0.2)';
+        banner.style.borderColor = isError ? 'rgba(239, 68, 68, 0.4)' : 'rgba(34, 197, 94, 0.4)';
+        banner.style.color = isError ? '#fca5a5' : '#86efac';
+        banner.innerHTML = msg;
+      }
+    }
+
+    function hideDiag() {
+      const banner = document.getElementById('diag-banner');
+      if (banner) banner.style.display = 'none';
+    }
+
+    // Audio Cues Synthesizer - only play when voice mode is active
+    function playSound(type) {
+      if (!soundEffectsEnabled || !voiceActive) return;
+      try {
+        const ctx = getAudioContext();
+        if (!ctx) return;
+        const now = ctx.currentTime;
+
+        if (type === 'listen') {
+          const osc = ctx.createOscillator();
+          const gain = ctx.createGain();
+          osc.connect(gain);
+          gain.connect(ctx.destination);
+          osc.type = 'sine';
+          osc.frequency.setValueAtTime(440, now);
+          osc.frequency.exponentialRampToValueAtTime(880, now + 0.12);
+          gain.gain.setValueAtTime(0.12, now);
+          gain.gain.exponentialRampToValueAtTime(0.001, now + 0.15);
+          osc.start(now);
+          osc.stop(now + 0.15);
+        } else if (type === 'win') {
+          [523.25, 659.25, 783.99, 1046.50].forEach((freq, i) => {
+            const osc = ctx.createOscillator();
+            const gain = ctx.createGain();
+            osc.connect(gain);
+            gain.connect(ctx.destination);
+            osc.type = 'triangle';
+            osc.frequency.setValueAtTime(freq, now + i * 0.08);
+            gain.gain.setValueAtTime(0.15, now + i * 0.08);
+            gain.gain.exponentialRampToValueAtTime(0.001, now + i * 0.08 + 0.3);
+            osc.start(now + i * 0.08);
+            osc.stop(now + i * 0.08 + 0.3);
+          });
+        } else if (type === 'loss') {
+          const osc = ctx.createOscillator();
+          const gain = ctx.createGain();
+          osc.connect(gain);
+          gain.connect(ctx.destination);
+          osc.type = 'sawtooth';
+          osc.frequency.setValueAtTime(440, now);
+          osc.frequency.exponentialRampToValueAtTime(220, now + 0.28);
+          gain.gain.setValueAtTime(0.1, now);
+          gain.gain.exponentialRampToValueAtTime(0.001, now + 0.3);
+          osc.start(now);
+          osc.stop(now + 0.3);
+        } else if (type === 'tie') {
+          [587.33, 587.33].forEach((freq, i) => {
+            const osc = ctx.createOscillator();
+            const gain = ctx.createGain();
+            osc.connect(gain);
+            gain.connect(ctx.destination);
+            osc.type = 'sine';
+            osc.frequency.setValueAtTime(freq, now + i * 0.1);
+            gain.gain.setValueAtTime(0.1, now + i * 0.1);
+            gain.gain.exponentialRampToValueAtTime(0.001, now + i * 0.1 + 0.08);
+            osc.start(now + i * 0.1);
+            osc.stop(now + i * 0.1 + 0.08);
+          });
+        } else if (type === 'error') {
+          const osc = ctx.createOscillator();
+          const gain = ctx.createGain();
+          osc.connect(gain);
+          gain.connect(ctx.destination);
+          osc.type = 'square';
+          osc.frequency.setValueAtTime(220, now);
+          gain.gain.setValueAtTime(0.08, now);
+          gain.gain.exponentialRampToValueAtTime(0.001, now + 0.15);
+          osc.start(now);
+          osc.stop(now + 0.15);
+        }
+      } catch (e) {
+        console.warn('Audio playback error:', e);
+      }
+    }
+
+    function srAnnounce(text) {
+      const el = document.getElementById('sr-announcements');
+      if (el) {
+        el.textContent = '';
+        setTimeout(() => { el.textContent = text; }, 50);
+      }
+    }
+
+    // Hang-proof Text-To-Speech with global utterance reference & safety timer
+    function speakText(text, callback) {
+      srAnnounce(text);
+
+      // ONLY speak aloud if Voice Mode is active and TTS is enabled
+      if (!voiceActive || !ttsEnabled || !('speechSynthesis' in window)) {
+        if (callback) callback();
+        return;
+      }
+
+      try {
+        window.speechSynthesis.cancel();
+      } catch (e) {}
+
+      const utterance = new SpeechSynthesisUtterance(text);
+      utterance.rate = 1.15;
+      utterance.pitch = 1.0;
+
+      // Retain global reference to bypass Chrome GC bug
+      window.__activeUtterance = utterance;
+
+      const voices = window.speechSynthesis.getVoices();
+      const naturalVoice = voices.find(v => v.lang.startsWith('en') && (v.name.includes('Natural') || v.name.includes('Google') || v.name.includes('Microsoft')));
+      if (naturalVoice) {
+        utterance.voice = naturalVoice;
+      }
+
+      isSpeaking = true;
+      updateVoiceIndicator();
+
+      let ended = false;
+      const cleanup = () => {
+        if (ended) return;
+        ended = true;
+        isSpeaking = false;
+        window.__activeUtterance = null;
+        updateVoiceIndicator();
+        if (callback) callback();
+      };
+
+      // Safety timeout: Chrome sometimes drops onend entirely
+      const safetyTimer = setTimeout(cleanup, 4500);
+
+      utterance.onend = () => {
+        clearTimeout(safetyTimer);
+        cleanup();
+      };
+
+      utterance.onerror = (e) => {
+        clearTimeout(safetyTimer);
+        cleanup();
+      };
+
+      try {
+        window.speechSynthesis.speak(utterance);
+      } catch (e) {
+        clearTimeout(safetyTimer);
+        cleanup();
+      }
+    }
+
+    // Live Microphone Hardware Audio Visualizer
+    async function startMicAudioMonitor() {
+      try {
+        const stream = await navigator.mediaDevices.getUserMedia({
+          audio: {
+            echoCancellation: true,
+            noiseSuppression: false,
+            autoGainControl: true
+          }
+        });
+        micStream = stream;
+        const ctx = getAudioContext();
+        if (!ctx) return true;
+
+        const source = ctx.createMediaStreamSource(stream);
+        const analyser = ctx.createAnalyser();
+        analyser.fftSize = 256;
+        source.connect(analyser);
+        micAnalyser = analyser;
+
+        const dataArray = new Uint8Array(analyser.frequencyBinCount);
+        const fillEl = document.getElementById('mic-level-fill');
+        const textEl = document.getElementById('mic-level-text');
+
+        function updateVolume() {
+          if (!micAnalyser) return;
+          micAnalyser.getByteFrequencyData(dataArray);
+          let sum = 0;
+          for (let i = 0; i < dataArray.length; i++) {
+            sum += dataArray[i];
+          }
+          const avg = sum / dataArray.length;
+          const pct = Math.min(100, Math.round((avg / 128) * 100));
+
+          if (fillEl) fillEl.style.width = `${pct}%`;
+          if (textEl) textEl.textContent = `${pct}%`;
+
+          micAnimFrame = requestAnimationFrame(updateVolume);
+        }
+        updateVolume();
+        hideDiag();
+        return true;
+      } catch (err) {
+        console.warn('Microphone permission / capture error:', err);
+        showDiag('⚠️ <strong>Microphone Blocked or Not Found:</strong> Please click the camera/lock icon in your browser address bar, set Microphone to "Allow", and refresh.');
+        return false;
+      }
+    }
+
+    function stopMicAudioMonitor() {
+      if (micAnimFrame) cancelAnimationFrame(micAnimFrame);
+      if (micStream) {
+        micStream.getTracks().forEach(track => track.stop());
+        micStream = null;
+      }
+      micAnalyser = null;
+      const fillEl = document.getElementById('mic-level-fill');
+      const textEl = document.getElementById('mic-level-text');
+      if (fillEl) fillEl.style.width = '0%';
+      if (textEl) textEl.textContent = '0%';
+    }
+
+    // Direct Microphone & Audio Test
+    async function testMicrophone() {
+      getAudioContext();
+      playSound('listen');
+      const ok = await startMicAudioMonitor();
+      if (ok) {
+        showDiag('✅ <strong>Microphone Connected!</strong> Speak into your mic — watch the volume bar bounce above.', false);
+      }
+    }
+
+    // Robust Speech Recognition
+    function createRecognitionInstance() {
+      const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
+      if (!SpeechRecognition) {
+        showDiag('❌ <strong>Browser Not Supported:</strong> Web Speech API is not supported in this browser. Please use <strong>Google Chrome</strong> or <strong>Microsoft Edge</strong>.');
+        return null;
+      }
+
+      const rec = new SpeechRecognition();
+      rec.continuous = true;
+      rec.interimResults = true; // Instant detection on the very first syllable
+      rec.lang = 'en-US';
+      rec.maxAlternatives = 5;   // Deep alternative scanning
+
+      rec.onstart = () => {
+        updateVoiceStatus('Listening hands-free... Say "Rock", "Paper", or "Scissors"', true);
+        playSound('listen');
+      };
+
+      rec.onresult = (event) => {
+        for (let i = event.resultIndex; i < event.results.length; i++) {
+          const res = event.results[i];
+          
+          // Check all confidence alternatives returned by the recognizer
+          for (let j = 0; j < res.length; j++) {
+            const transcript = res[j].transcript.trim().toLowerCase();
+            if (j === 0) {
+              document.getElementById('voice-transcript').innerText = `"${transcript}"`;
+            }
+
+            // High-sensitivity instant move matcher
+            const moveMatched = extractMove(transcript);
+            if (moveMatched) {
+              const now = Date.now();
+              if (now - lastProcessedMoveTimestamp > 600) {
+                lastProcessedMoveTimestamp = now;
+                handleMoveDetected(moveMatched, transcript);
+              }
+              return;
+            }
+
+            // Check control commands on final results
+            if (res.isFinal && j === 0) {
+              handleControlCommand(transcript);
+            }
+          }
+        }
+      };
+
+      rec.onerror = (event) => {
+        console.warn('Speech recognition error event:', event.error);
+        if (event.error === 'not-allowed') {
+          showDiag('❌ <strong>Microphone Access Denied:</strong> Please allow microphone access in your browser address bar.');
+          voiceActive = false;
+          updateVoiceIndicator();
+          updateVoiceStatus('Microphone blocked', false);
+        } else if (event.error === 'network') {
+          showDiag('⚠️ <strong>Network Error:</strong> Chrome speech service requires an active internet connection. If offline, try Microsoft Edge.');
+        } else if (event.error === 'no-speech') {
+          // Normal silence; auto continues immediately
+        }
+      };
+
+      rec.onend = () => {
+        if (voiceActive) {
+          // Instant zero-pause reconnect so there is never a deaf pause
+          setTimeout(() => {
+            if (voiceActive) startRecognitionSafe();
+          }, 40);
+        }
+      };
+
+      return rec;
+    }
+
+    function extractMove(text) {
+      if (!text) return null;
+      const clean = text.toLowerCase().replace(/[^a-z0-9\s]/g, ' ').trim();
+      const words = clean.split(/\s+/);
+
+      // 1. Precise and phonetic word-level checks (handles accents and single-word utterances)
+      for (const w of words) {
+        // Rock variations
+        if (/^(rock|stone|rok|rawk|roq|rox|lock|chalk|shock|knock|brock|doc|rag|rog|ro|rahk|ruhk|wock|walk)$/i.test(w)) {
+          return 'R';
+        }
+        if (w.startsWith('roc') || w.startsWith('ston') || w.startsWith('rawk') || w.startsWith('roq')) {
+          return 'R';
+        }
+
+        // Paper variations
+        if (/^(paper|papar|page|payper|pepper|piper|taper|vapor|papper|paypa|peper|ppr|pepa)$/i.test(w)) {
+          return 'P';
+        }
+        if (w.startsWith('pap') || w.startsWith('payp') || w.startsWith('pepp')) {
+          return 'P';
+        }
+
+        // Scissors variations
+        if (/^(scissors?|cutters?|cuts?|caesars?|scizors?|sissors?|sizzors?|seasons?|ceasers?|cizors?|sizz|sciss|cissor|skissors?)$/i.test(w)) {
+          return 'S';
+        }
+        if (w.startsWith('sciss') || w.startsWith('siss') || w.startsWith('sciz') || w.startsWith('sizz') || w.startsWith('ciss') || w.startsWith('cutt') || w.startsWith('skis')) {
+          return 'S';
+        }
+      }
+
+      // 2. Phrase-level phonetic inclusion check (e.g. "I pick rock", "go paper", "shoot scissors")
+      if (clean.includes('rock') || clean.includes('stone') || clean.includes(' rok') || clean.includes('lock') || clean.includes('rawk')) {
+        return 'R';
+      }
+      if (clean.includes('paper') || clean.includes('page') || clean.includes('pepper') || clean.includes('payper')) {
+        return 'P';
+      }
+      if (clean.includes('scissor') || clean.includes('cutter') || clean.includes('caesar') || clean.includes('sissor') || clean.includes(' cut') || clean.includes('skissor')) {
+        return 'S';
+      }
+
+      return null;
+    }
+
+    function handleMoveDetected(move, rawText) {
+      document.getElementById('voice-transcript').innerText = `Recognized: "${NAMES[move]}" (${rawText})`;
+      playMove(move);
+    }
+
+    function handleControlCommand(text) {
+      if (text.includes('score') || text.includes('scores') || text.includes('status') || text.includes('stats')) {
+        announceScore(true);
+      } else if (text.includes('reset') || text.includes('restart') || text.includes('new game') || text.includes('clear')) {
+        resetGame(true);
+      } else if (text.includes('repeat') || text.includes('again') || text.includes('what happened')) {
+        repeatLastRound();
+      } else if (text.includes('help') || text.includes('command') || text.includes('how to play')) {
+        speakHelp();
+      } else if (text.includes('stop') || text.includes('pause') || text.includes('turn off')) {
+        toggleVoiceMode();
+        speakText('Voice mode turned off.');
+      }
+    }
+
+    function startRecognitionSafe() {
+      if (!voiceActive) return;
+      if (recognition) {
+        try { recognition.abort(); } catch (e) {}
+      }
+      recognition = createRecognitionInstance();
+      if (!recognition) return;
+
+      try {
+        recognition.start();
+        updateVoiceIndicator();
+      } catch (e) {
+        console.warn('Speech start caught exception:', e);
+      }
+    }
+
+    function stopRecognition() {
+      if (recognition) {
+        try {
+          recognition.onend = null;
+          recognition.abort();
+        } catch (e) {}
+        recognition = null;
+      }
+      stopMicAudioMonitor();
+      updateVoiceIndicator();
+    }
+
+    async function toggleVoiceMode() {
+      getAudioContext();
+      voiceActive = !voiceActive;
+
+      const btn = document.getElementById('btn-voice-main');
+
+      if (voiceActive) {
+        btn.classList.add('active');
+        document.getElementById('voice-btn-icon').innerText = '⏹️';
+        document.getElementById('voice-btn-label').innerText = 'Stop Voice Mode';
+
+        // 1. Request microphone access explicitly to guarantee browser permission
+        const micGranted = await startMicAudioMonitor();
+        if (!micGranted) {
+          voiceActive = false;
+          btn.classList.remove('active');
+          document.getElementById('voice-btn-icon').innerText = '🎙️';
+          document.getElementById('voice-btn-label').innerText = 'Start Voice Mode';
+          return;
+        }
+
+        updateVoiceStatus('Voice mode active. Say "Rock", "Paper", or "Scissors".', true);
+        startRecognitionSafe();
+        speakText('Voice mode active. Say Rock, Paper, or Scissors to play.');
+      } else {
+        btn.classList.remove('active');
+        document.getElementById('voice-btn-icon').innerText = '🎙️';
+        document.getElementById('voice-btn-label').innerText = 'Start Voice Mode';
+        stopRecognition();
+        try { window.speechSynthesis.cancel(); } catch (e) {}
+        updateVoiceStatus('Voice command stopped. Press V or click to activate.', false);
+        document.getElementById('voice-transcript').innerText = 'Say "Rock", "Paper", or "Scissors" to play';
+      }
+    }
+
+    function updateVoiceStatus(text, listening) {
+      document.getElementById('voice-status-heading').innerText = listening ? '🎙️ Listening Hands-Free' : 'Voice Command: Ready';
+      document.getElementById('voice-status-sub').innerText = text;
+      document.getElementById('voice-active-wave').style.display = listening ? 'inline-flex' : 'none';
+    }
+
+    function updateVoiceIndicator() {
+      const mic = document.getElementById('mic-status-btn');
+      mic.className = 'mic-indicator';
+      if (isSpeaking) {
+        mic.classList.add('speaking');
+        mic.innerText = '🔊';
+      } else if (voiceActive) {
+        mic.classList.add('listening');
+        mic.innerText = '🎙️';
+      } else {
+        mic.innerText = '🎙️';
+      }
+    }
+
+    function announceScore(spoken = true) {
+      if (!currentGameState) return;
+      const s = currentGameState;
+      const text = `Current score: Round ${s.total_rounds}. You have ${s.human_wins} wins, AI has ${s.agent_wins} wins, and ${s.ties} ties. AI win rate is ${s.ai_win_rate} percent.`;
+      if (spoken) {
+        speakText(text);
+      } else {
+        srAnnounce(text);
+      }
+    }
+
+    function repeatLastRound() {
+      if (lastOutcomeText) {
+        speakText(lastOutcomeText);
+      } else {
+        speakText('No rounds played yet. Say Rock, Paper, or Scissors to begin.');
+      }
+    }
+
+    function speakHelp() {
+      const helpMsg = 'Voice commands: Say Rock, Paper, or Scissors to play your move. Say Score to hear the match score. Say Reset to restart the match. Say Repeat to hear the last round. Say Stop to turn off voice mode.';
+      speakText(helpMsg);
+    }
+
+    function toggleSpeechAudio() {
+      ttsEnabled = !ttsEnabled;
+      const btn = document.getElementById('btn-tts-toggle');
+      if (ttsEnabled) {
+        btn.classList.remove('muted');
+        btn.innerText = '🔊';
+        btn.title = 'Spoken Commentary: ON';
+        speakText('Voice commentary enabled.');
+      } else {
+        btn.classList.add('muted');
+        btn.innerText = '🔇';
+        btn.title = 'Spoken Commentary: OFF';
+        try { window.speechSynthesis.cancel(); } catch (e) {}
+      }
+    }
+
+    function toggleSoundEffects() {
+      soundEffectsEnabled = !soundEffectsEnabled;
+      const btn = document.getElementById('btn-sound-toggle');
+      if (soundEffectsEnabled) {
+        btn.classList.remove('muted');
+        btn.innerText = '🔔';
+        btn.title = 'Audio Chimes: ON';
+        playSound('listen');
+      } else {
+        btn.classList.add('muted');
+        btn.innerText = '🔕';
+        btn.title = 'Audio Chimes: OFF';
+      }
+    }
+
     async function playMove(move) {
       try {
         const res = await fetch('/api/play', {
@@ -493,13 +1463,14 @@
           body: JSON.stringify({ move })
         });
         const data = await res.json();
-        updateUI(data);
+        updateUI(data, true);
       } catch (err) {
         console.error('Error playing move:', err);
+        speakText('Connection error communicating with the server.');
       }
     }
 
-    async function resetGame() {
+    async function resetGame(fromVoice = false) {
       try {
         const res = await fetch('/api/reset', { method: 'POST' });
         const data = await res.json();
@@ -511,12 +1482,20 @@
         document.getElementById('outcome-pill').className = 'outcome-pill';
         document.getElementById('outcome-pill').innerText = 'Game reset. Choose your move!';
         document.getElementById('ai-prediction-text').innerText = 'Model reset to initial state.';
+        lastOutcomeText = '';
+        const msg = 'Game reset to round zero. Ready for your move.';
+        if (fromVoice || (voiceActive && ttsEnabled)) {
+          speakText(msg);
+        } else {
+          srAnnounce(msg);
+        }
       } catch (err) {
         console.error('Error resetting game:', err);
       }
     }
 
-    function updateUI(data) {
+    function updateUI(data, isNewRound = false) {
+      currentGameState = data;
       document.getElementById('score-rounds').innerText = data.total_rounds;
       document.getElementById('score-ai').innerText = data.agent_wins;
       document.getElementById('score-you').innerText = data.human_wins;
@@ -530,35 +1509,97 @@
         document.getElementById('ai-move-label').innerText = lr.agent_move_name;
 
         const pill = document.getElementById('outcome-pill');
+        let spokenResult = '';
+
         if (lr.outcome === 'WIN') {
           pill.className = 'outcome-pill outcome-win';
-          pill.innerText = `🤖 AI WON! (Predicted your ${lr.human_move_name} and played ${lr.agent_move_name})`;
+          pill.innerText = `🤖 AI WON! (Predicted your ${lr.human_move_name} and countered with ${lr.agent_move_name})`;
+          spokenResult = `AI played ${lr.agent_move_name}. AI wins! Score is ${data.human_wins} to ${data.agent_wins}.`;
+          if (isNewRound && voiceActive) playSound('loss');
         } else if (lr.outcome === 'LOSS') {
           pill.className = 'outcome-pill outcome-loss';
           pill.innerText = `🎉 YOU WON! (AI played ${lr.agent_move_name})`;
+          spokenResult = `AI played ${lr.agent_move_name}. You win! Score is ${data.human_wins} to ${data.agent_wins}.`;
+          if (isNewRound && voiceActive) playSound('win');
         } else {
           pill.className = 'outcome-pill outcome-tie';
           pill.innerText = `🤝 IT'S A TIE! (Both played ${lr.human_move_name})`;
+          spokenResult = `Both played ${lr.human_move_name}. It's a tie! Score is ${data.human_wins} to ${data.agent_wins}.`;
+          if (isNewRound && voiceActive) playSound('tie');
         }
 
+        lastOutcomeText = spokenResult;
         document.getElementById('ai-prediction-text').innerText = 
           `Predicted Opponent: ${lr.predicted_move_name} (${lr.predicted_move}) ➔ Played Counter: ${lr.agent_move_name} (${lr.agent_move})`;
+
+        if (isNewRound && voiceActive) {
+          speakText(spokenResult);
+        }
       }
 
       // Update History List
+      renderHistoryList(data);
+    }
+
+    let historyOrder = 'beginning'; // 'beginning' (from Round 1 at top) or 'latest' (newest on top)
+
+    function toggleHistoryOrder() {
+      historyOrder = (historyOrder === 'beginning') ? 'latest' : 'beginning';
+      const label = document.getElementById('history-order-label');
+      if (label) {
+        label.textContent = (historyOrder === 'beginning') ? 'From Beginning (Round 1)' : 'Newest on Top';
+      }
+      if (currentGameState) {
+        renderHistoryList(currentGameState, false);
+      }
+    }
+
+    function scrollToBeginning() {
       const histList = document.getElementById('history-list');
-      if (data.history && data.history.length > 0) {
-        histList.innerHTML = data.history.slice().reverse().map(h => {
-          let badgeColor = h.outcome === 'WIN' ? '#ef4444' : (h.outcome === 'LOSS' ? '#22c55e' : '#f59e0b');
-          return `
-            <div class="history-row">
-              <span>#${h.round}</span>
-              <span>You: ${EMOJIS[h.human]} ${h.human}</span>
-              <span>AI: ${EMOJIS[h.agent]} ${h.agent}</span>
-              <span style="color: ${badgeColor}; font-weight: 700;">${h.outcome === 'WIN' ? 'AI WIN' : (h.outcome === 'LOSS' ? 'YOU WIN' : 'TIE')}</span>
-            </div>
-          `;
-        }).join('');
+      if (histList) {
+        histList.scrollTo({ top: 0, behavior: 'smooth' });
+      }
+    }
+
+    function scrollToLatest() {
+      const histList = document.getElementById('history-list');
+      if (histList) {
+        histList.scrollTo({ top: histList.scrollHeight, behavior: 'smooth' });
+      }
+    }
+
+    function renderHistoryList(data, shouldAutoScroll = true) {
+      const histList = document.getElementById('history-list');
+      const countBadge = document.getElementById('history-round-count');
+      if (!histList) return;
+
+      if (!data.history || data.history.length === 0) {
+        histList.innerHTML = '<div style="text-align: center; color: var(--text-muted); padding: 30px;">No rounds played yet. Make your first move!</div>';
+        if (countBadge) countBadge.textContent = '0 Rounds Recorded';
+        return;
+      }
+
+      if (countBadge) countBadge.textContent = `${data.history.length} Rounds Recorded`;
+
+      // 'beginning' lists from Round 1 downwards; 'latest' lists newest first
+      const items = (historyOrder === 'beginning') ? data.history.slice() : data.history.slice().reverse();
+
+      histList.innerHTML = items.map(h => {
+        let badgeColor = h.outcome === 'WIN' ? '#ef4444' : (h.outcome === 'LOSS' ? '#22c55e' : '#f59e0b');
+        return `
+          <div class="history-row">
+            <span><strong>#${h.round}</strong></span>
+            <span>You: ${EMOJIS[h.human]} ${h.human}</span>
+            <span>AI: ${EMOJIS[h.agent]} ${h.agent}</span>
+            <span style="color: ${badgeColor}; font-weight: 700;">${h.outcome === 'WIN' ? 'AI WIN' : (h.outcome === 'LOSS' ? 'YOU WIN' : 'TIE')}</span>
+          </div>
+        `;
+      }).join('');
+
+      if (shouldAutoScroll && historyOrder === 'beginning') {
+        setTimeout(() => {
+          histList.scrollTo({ top: histList.scrollHeight, behavior: 'smooth' });
+        }, 60);
       }
 
       // Update Markov Grid
@@ -583,13 +1624,38 @@
       document.querySelectorAll('.tab-btn').forEach(btn => {
         btn.classList.toggle('active', btn.getAttribute('onclick').includes(tabName));
       });
+      srAnnounce(`Switched to ${tabName} tab`);
     }
 
-    // Keyboard controls (R, P, S)
+    // Keyboard Shortcuts
     window.addEventListener('keydown', (e) => {
+      if (['INPUT', 'TEXTAREA'].includes(e.target.tagName)) return;
+
       const key = e.key.toUpperCase();
-      if (['R', 'P', 'S'].includes(key)) {
-        playMove(key);
+      if (key === 'V') {
+        e.preventDefault();
+        toggleVoiceMode();
+      } else if (key === 'R') {
+        e.preventDefault();
+        playMove('R');
+      } else if (key === 'P') {
+        e.preventDefault();
+        playMove('P');
+      } else if (key === 'S') {
+        e.preventDefault();
+        playMove('S');
+      } else if (key === 'C') {
+        e.preventDefault();
+        announceScore(true);
+      } else if (key === 'X') {
+        e.preventDefault();
+        resetGame(false);
+      } else if (key === 'M') {
+        e.preventDefault();
+        toggleSpeechAudio();
+      } else if (key === 'H' || key === '?') {
+        e.preventDefault();
+        speakHelp();
       }
     });
 

@@ -2,10 +2,13 @@
 Native Desktop GUI for Rock-Paper-Scissors Opponent Modeling
 =============================================================
 A pure-Python Tkinter desktop window for playing live against the Markov AI.
+Includes built-in speech synthesis (TTS) and accessible hotkeys for visually impaired users.
 """
 
 import os
+import subprocess
 import sys
+import threading
 import tkinter as tk
 from tkinter import messagebox, ttk
 
@@ -15,11 +18,29 @@ sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
 from rps_agent import AdaptiveAgent, COUNTER_MOVES, MOVE_NAMES, evaluate_round
 
 
+def speak_async(text: str):
+    """Speaks text asynchronously using Windows SAPI without blocking UI."""
+    def _speak():
+        try:
+            safe_text = text.replace('"', '`"')
+            cmd = f'Add-Type -AssemblyName System.Speech; $synth = New-Object System.Speech.Synthesis.SpeechSynthesizer; $synth.Rate = 1; $synth.Speak("{safe_text}")'
+            subprocess.run(
+                ["powershell", "-NoProfile", "-WindowStyle", "Hidden", "-Command", cmd],
+                creationflags=subprocess.CREATE_NO_WINDOW if os.name == "nt" else 0,
+                capture_output=True,
+                timeout=12,
+            )
+        except Exception:
+            pass
+
+    threading.Thread(target=_speak, daemon=True).start()
+
+
 class RPSDesktopApp:
     def __init__(self, root):
         self.root = root
-        self.root.title("RPS Markov Opponent Modeling AI")
-        self.root.geometry("620x680")
+        self.root.title("RPS Markov Opponent Modeling AI — Accessible Edition")
+        self.root.geometry("660x720")
         self.root.configure(bg="#0f172a")
         self.root.resizable(False, False)
 
@@ -28,12 +49,14 @@ class RPSDesktopApp:
         self.agent_wins = 0
         self.ties = 0
         self.total_rounds = 0
+        self.tts_enabled = False
 
         self._build_ui()
+        self._bind_keys()
 
     def _build_ui(self):
         # Header Frame
-        header = tk.Frame(self.root, bg="#0f172a", pady=15)
+        header = tk.Frame(self.root, bg="#0f172a", pady=12)
         header.pack(fill="x")
 
         title = tk.Label(
@@ -47,18 +70,41 @@ class RPSDesktopApp:
 
         subtitle = tk.Label(
             header,
-            text="Order-2 Markov Chain Agent with Backoff",
+            text="Order-2 Markov Chain Agent • 🎙️ Voice & Accessibility Enabled",
             font=("Helvetica", 10),
             fg="#94a3b8",
             bg="#0f172a",
         )
         subtitle.pack(pady=2)
 
-        # Scoreboard Frame
-        score_frame = tk.Frame(self.root, bg="#1e293b", padx=15, pady=12, relief="ridge", bd=1)
-        score_frame.pack(fill="x", padx=25, pady=10)
+        # Accessibility Control Bar
+        acc_bar = tk.Frame(self.root, bg="#1e293b", padx=15, pady=6)
+        acc_bar.pack(fill="x", padx=25, pady=4)
 
-        # 4 columns: Rounds, AI Wins, You, Win Rate
+        self.lbl_acc_status = tk.Label(
+            acc_bar,
+            text="🔇 Spoken Commentary: OFF • Press V to Enable Voice Mode",
+            font=("Consolas", 8, "bold"),
+            fg="#94a3b8",
+            bg="#1e293b",
+        )
+        self.lbl_acc_status.pack(side="left")
+
+        self.btn_tts_toggle = tk.Button(
+            acc_bar,
+            text="🎙️ Enable Voice (V)",
+            font=("Helvetica", 8, "bold"),
+            bg="#0284c7",
+            fg="white",
+            relief="flat",
+            command=self.toggle_tts,
+        )
+        self.btn_tts_toggle.pack(side="right")
+
+        # Scoreboard Frame
+        score_frame = tk.Frame(self.root, bg="#1e293b", padx=15, pady=10, relief="ridge", bd=1)
+        score_frame.pack(fill="x", padx=25, pady=8)
+
         self.lbl_rounds = tk.Label(score_frame, text="Rounds\n0", font=("Helvetica", 12, "bold"), fg="#f8fafc", bg="#1e293b")
         self.lbl_rounds.grid(row=0, column=0, padx=18)
 
@@ -72,8 +118,8 @@ class RPSDesktopApp:
         self.lbl_rate.grid(row=0, column=3, padx=18)
 
         # Arena Display Box
-        arena_frame = tk.Frame(self.root, bg="#1e293b", padx=20, pady=15, relief="ridge", bd=1)
-        arena_frame.pack(fill="x", padx=25, pady=10)
+        arena_frame = tk.Frame(self.root, bg="#1e293b", padx=20, pady=12, relief="ridge", bd=1)
+        arena_frame.pack(fill="x", padx=25, pady=8)
 
         self.lbl_player_move = tk.Label(arena_frame, text="YOU\n❓", font=("Helvetica", 14, "bold"), fg="#f8fafc", bg="#1e293b")
         self.lbl_player_move.grid(row=0, column=0, padx=40)
@@ -87,56 +133,56 @@ class RPSDesktopApp:
         # Outcome Banner
         self.lbl_outcome = tk.Label(
             self.root,
-            text="Choose your move (Rock, Paper, or Scissors)",
+            text="Choose your move: Press R, P, or S",
             font=("Helvetica", 11, "bold"),
             fg="#f8fafc",
             bg="#334155",
             pady=8,
         )
-        self.lbl_outcome.pack(fill="x", padx=25, pady=8)
+        self.lbl_outcome.pack(fill="x", padx=25, pady=6)
 
         # Buttons Frame
         btn_frame = tk.Frame(self.root, bg="#0f172a")
-        btn_frame.pack(pady=10)
+        btn_frame.pack(pady=8)
 
         btn_rock = tk.Button(
             btn_frame,
-            text="🪨 Rock",
-            font=("Helvetica", 12, "bold"),
+            text="🪨 Rock (R)",
+            font=("Helvetica", 11, "bold"),
             bg="#3b82f6",
             fg="white",
-            width=12,
+            width=13,
             height=2,
             cursor="hand2",
             command=lambda: self.play("R"),
         )
-        btn_rock.grid(row=0, column=0, padx=8)
+        btn_rock.grid(row=0, column=0, padx=6)
 
         btn_paper = tk.Button(
             btn_frame,
-            text="📄 Paper",
-            font=("Helvetica", 12, "bold"),
+            text="📄 Paper (P)",
+            font=("Helvetica", 11, "bold"),
             bg="#8b5cf6",
             fg="white",
-            width=12,
+            width=13,
             height=2,
             cursor="hand2",
             command=lambda: self.play("P"),
         )
-        btn_paper.grid(row=0, column=1, padx=8)
+        btn_paper.grid(row=0, column=1, padx=6)
 
         btn_scissors = tk.Button(
             btn_frame,
-            text="✂️ Scissors",
-            font=("Helvetica", 12, "bold"),
+            text="✂️ Scissors (S)",
+            font=("Helvetica", 11, "bold"),
             bg="#ec4899",
             fg="white",
-            width=12,
+            width=13,
             height=2,
             cursor="hand2",
             command=lambda: self.play("S"),
         )
-        btn_scissors.grid(row=0, column=2, padx=8)
+        btn_scissors.grid(row=0, column=2, padx=6)
 
         # AI Prediction Insight
         self.lbl_prediction = tk.Label(
@@ -150,7 +196,7 @@ class RPSDesktopApp:
 
         # History Treeview
         hist_frame = tk.Frame(self.root, bg="#0f172a")
-        hist_frame.pack(fill="both", expand=True, padx=25, pady=10)
+        hist_frame.pack(fill="both", expand=True, padx=25, pady=8)
 
         columns = ("round", "you", "ai", "pred", "result")
         self.tree = ttk.Treeview(hist_frame, columns=columns, show="headings", height=5)
@@ -167,24 +213,61 @@ class RPSDesktopApp:
         self.tree.column("result", width=100, anchor="center")
         self.tree.pack(fill="both", expand=True)
 
-        # Reset button
+        # Controls Row (Reset + Speak Score)
+        ctrl_frame = tk.Frame(self.root, bg="#0f172a")
+        ctrl_frame.pack(pady=6)
+
+        btn_score = tk.Button(
+            ctrl_frame,
+            text="Announce Score (C)",
+            font=("Helvetica", 9),
+            bg="#0284c7",
+            fg="white",
+            command=self.announce_score,
+            padx=10,
+        )
+        btn_score.grid(row=0, column=0, padx=6)
+
         btn_reset = tk.Button(
-            self.root,
-            text="Reset Match",
+            ctrl_frame,
+            text="Reset Match (X)",
             font=("Helvetica", 9),
             bg="#475569",
             fg="white",
             command=self.reset_game,
+            padx=10,
         )
-        btn_reset.pack(pady=8)
+        btn_reset.grid(row=0, column=1, padx=6)
 
-        # Key bindings
-        self.root.bind("<r>", lambda e: self.play("R"))
-        self.root.bind("<p>", lambda e: self.play("P"))
-        self.root.bind("<s>", lambda e: self.play("S"))
-        self.root.bind("<R>", lambda e: self.play("R"))
-        self.root.bind("<P>", lambda e: self.play("P"))
-        self.root.bind("<S>", lambda e: self.play("S"))
+    def _bind_keys(self):
+        """Bind accessible hotkeys for keyboard & screen reader players."""
+        for r_key in ["<r>", "<R>"]:
+            self.root.bind(r_key, lambda e: self.play("R"))
+        for p_key in ["<p>", "<P>"]:
+            self.root.bind(p_key, lambda e: self.play("P"))
+        for s_key in ["<s>", "<S>"]:
+            self.root.bind(s_key, lambda e: self.play("S"))
+        for c_key in ["<c>", "<C>"]:
+            self.root.bind(c_key, lambda e: self.announce_score())
+        for x_key in ["<x>", "<X>"]:
+            self.root.bind(x_key, lambda e: self.reset_game())
+        for m_key in ["<m>", "<M>", "<v>", "<V>"]:
+            self.root.bind(m_key, lambda e: self.toggle_tts())
+
+    def toggle_tts(self):
+        self.tts_enabled = not self.tts_enabled
+        if self.tts_enabled:
+            self.btn_tts_toggle.config(text="⏹️ Stop Voice (V)", bg="#dc2626")
+            self.lbl_acc_status.config(text="🔊 Voice Commentary: ON • Keys: [R/P/S] Play, [C] Score", fg="#38bdf8")
+            speak_async("Voice commentary enabled.")
+        else:
+            self.btn_tts_toggle.config(text="🎙️ Enable Voice (V)", bg="#0284c7")
+            self.lbl_acc_status.config(text="🔇 Voice Commentary: OFF • Press V to Enable Voice Mode", fg="#94a3b8")
+
+    def announce_score(self):
+        text = f"Round {self.total_rounds}. You have {self.human_wins} wins, AI has {self.agent_wins} wins, and {self.ties} ties."
+        if self.tts_enabled:
+            speak_async(text)
 
     def play(self, move: str):
         emojis = {"R": "🪨", "P": "📄", "S": "✂️"}
@@ -195,18 +278,22 @@ class RPSDesktopApp:
         self.agent.observe(move)
         self.total_rounds += 1
 
+        spoken_msg = ""
         if outcome == "WIN":
             self.agent_wins += 1
             res_str = "AI WINS"
-            self.lbl_outcome.config(text=f"AI Won! AI predicted {MOVE_NAMES[predicted_move]} and played {MOVE_NAMES[agent_move]}", bg="#7f1d1d", fg="#fca5a5")
+            self.lbl_outcome.config(text=f"AI Won! AI predicted {MOVE_NAMES[predicted_move]} and countered with {MOVE_NAMES[agent_move]}", bg="#7f1d1d", fg="#fca5a5")
+            spoken_msg = f"You played {MOVE_NAMES[move]}. AI countered with {MOVE_NAMES[agent_move]}. AI wins! Score: You {self.human_wins}, AI {self.agent_wins}."
         elif outcome == "LOSS":
             self.human_wins += 1
             res_str = "YOU WIN"
             self.lbl_outcome.config(text=f"You Won! AI played {MOVE_NAMES[agent_move]}", bg="#14532d", fg="#86efac")
+            spoken_msg = f"You played {MOVE_NAMES[move]}. AI played {MOVE_NAMES[agent_move]}. You win! Score: You {self.human_wins}, AI {self.agent_wins}."
         else:
             self.ties += 1
             res_str = "TIE"
             self.lbl_outcome.config(text=f"Tie! Both played {MOVE_NAMES[move]}", bg="#78350f", fg="#fde68a")
+            spoken_msg = f"Both played {MOVE_NAMES[move]}. It's a tie! Score: You {self.human_wins}, AI {self.agent_wins}."
 
         ai_rate = (self.agent_wins / self.total_rounds) * 100
 
@@ -222,6 +309,9 @@ class RPSDesktopApp:
 
         # Insert to history treeview at top
         self.tree.insert("", 0, values=(self.total_rounds, f"{emojis[move]} {move}", f"{emojis[agent_move]} {agent_move}", f"{emojis[predicted_move]} {predicted_move}", res_str))
+
+        if self.tts_enabled:
+            speak_async(spoken_msg)
 
     def reset_game(self):
         self.agent.reset()
@@ -240,6 +330,9 @@ class RPSDesktopApp:
         self.lbl_prediction.config(text="AI Inference: Model reset to initial state.")
         for item in self.tree.get_children():
             self.tree.delete(item)
+
+        if self.tts_enabled:
+            speak_async("Game reset to round zero. Ready for your move.")
 
 
 if __name__ == "__main__":

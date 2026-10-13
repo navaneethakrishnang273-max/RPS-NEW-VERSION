@@ -223,7 +223,7 @@ class RPSRequestHandler(http.server.SimpleHTTPRequestHandler):
                     "outcome": game_history["outcomes"][i],
                 }
                 for i in range(len(game_history["human_moves"]))
-            ][-15:],  # Return last 15 rounds
+            ],
             "model_stats": {
                 "order": live_agent.model.order,
                 "unigrams": unigram_counts,
